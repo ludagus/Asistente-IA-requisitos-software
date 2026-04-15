@@ -1,0 +1,12 @@
+{
+  "ambiguas": [
+    "rápido", "eficiente", "fácil", "intuitivo", "mejorado", "seguro", "flexible", "amigable"
+  ],
+  "incompletos": [
+    "debe", "debería", "podría"
+  ],
+  "contradictorios": [
+    ["usuario", "cliente"],
+    ["sistema", "aplicación"]
+  ]
+}

@@ -1,0 +1,155 @@
+MDScreen:
+
+    MDNavigationLayout:
+        id: nav_layout  # útil si después querés referenciarlo desde Python
+
+        ScreenManager:
+            MDScreen:
+
+                MDTopAppBar:
+                    title: "Asistente Inteligente de Requisitos"
+                    elevation: 4
+                    left_action_items: [["menu", lambda x: app.abrir_menu()]]
+                    pos_hint: {"top": 1}
+                    size_hint_y: None
+                    height: "56dp"
+
+                MDTabs:
+                    id: tabs
+                    size_hint_y: 0.9
+                    pos_hint: {"top": 0.9}
+                    tab_bar_height: "46dp"
+
+                    Tab:
+                        title: "Análisis"
+                        MDBoxLayout:
+                            orientation: "vertical"
+                            padding: 10
+                            spacing: 10
+
+                            MDTextField:
+                                id: texto_input
+                                hint_text: "Escribí tu requerimiento aquí..."
+                                multiline: True
+                                size_hint_y: 0.3
+
+                            MDBoxLayout:
+                                size_hint_y: None
+                                height: "48dp"
+                                spacing: 10
+
+                                MDRaisedButton:
+                                    text: "Analizar"
+                                    md_bg_color: app.theme_cls.primary_color
+                                    on_release: app.analizar_texto()
+
+                                MDFlatButton:
+                                    text: "Limpiar"
+                                    on_release: app.limpiar()
+
+                            ScrollView:
+                                MDLabel:
+                                    id: resultado
+                                    text: ""
+                                    markup: True
+                                    theme_text_color: "Primary"
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text_size: self.width, None
+                                    halign: "left"
+
+                    Tab:
+                        title: "Criterios"
+                        ScrollView:
+                            MDLabel:
+                                text:
+                                    "[b]Criterios de calidad (IEEE 830):[/b]\n\n" \
+                                    "• Corrección\n" \
+                                    "• No ambigüedad\n" \
+                                    "• Completitud\n" \
+                                    "• Consistencia\n" \
+                                    "• Clasificación\n" \
+                                    "• Verificabilidad\n" \
+                                    "• Modificabilidad\n" \
+                                    "• Trazabilidad"
+                                markup: True
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                text_size: self.width, None
+                                halign: "left"
+                                padding: 10, 10
+
+                    Tab:
+                        title: "Ayuda"
+                        ScrollView:
+                            MDLabel:
+                                text:
+                                    "[b]Consejos para redactar buenos requerimientos:[/b]\n\n" \
+                                    "✅ Usá lenguaje claro y directo.\n" \
+                                    "✅ Evitá términos ambiguos (rápido, fácil, eficiente).\n" \
+                                    "✅ Indicá actor, acción y condición.\n" \
+                                    "✅ Usá 'El sistema debe...' para mantener consistencia.\n" \
+                                    "✅ Evitá mezclar requisitos funcionales con los no funcionales.\n\n" \
+                                    "💡 Este asistente te ayudará a detectar errores y mejorar tu redacción."
+                                markup: True
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                text_size: self.width, None
+                                halign: "left"
+                                padding: 10, 10
+ # ---------- Menú lateral ----------
+        MDNavigationDrawer:
+            id: nav_drawer
+
+            BoxLayout:
+                orientation: "vertical"
+                spacing: "12dp"
+                padding: "20dp"
+
+                # Encabezado institucional
+                MDBoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: "120dp"
+                    padding: 10
+                    md_bg_color: 0.93, 0.93, 1, 1  # color suave
+                    MDLabel:
+                        text: "Asistente IA"
+                        font_style: "H6"
+                        theme_text_color: "Primary"
+                    MDLabel:
+                        text: "Laura Pared - ISFD Nº XX"
+                        font_style: "Body2"
+                        theme_text_color: "Secondary"
+
+                # Ítems del menú
+                MDList:
+                    OneLineIconListItem:
+                        text: "Inicio"
+                        on_release: app.navegar("analisis")
+                        IconLeftWidget:
+                            icon: "home"
+
+                    OneLineIconListItem:
+                        text: "Criterios"
+                        on_release: app.navegar("criterios")
+                        IconLeftWidget:
+                            icon: "file-document"
+
+                    OneLineIconListItem:
+                        text: "Ayuda"
+                        on_release: app.navegar("ayuda")
+                        IconLeftWidget:
+                            icon: "lightbulb"
+
+                    OneLineIconListItem:
+                        text: "Acerca de"
+                        on_release: app.mostrar_acerca_de()
+                        IconLeftWidget:
+                            icon: "information"
+
+                    OneLineIconListItem:
+                        text: "Salir"
+                        on_release: app.salir()
+                        IconLeftWidget:
+                            icon: "exit-to-app"
