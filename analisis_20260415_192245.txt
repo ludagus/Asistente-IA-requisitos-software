@@ -1,0 +1,7 @@
+Requerimiento: el sistema debe permitir cargar cosas.
+
+Resultados:
+CORRECTO
+Cumple con las heurísticas básicas.
+Sugerencia: ¡Buen trabajo!
+

@@ -1,11 +1,9 @@
 MDScreen:
-
     MDNavigationLayout:
-        id: nav_layout  # útil si después querés referenciarlo desde Python
+        id: nav_layout
 
         ScreenManager:
             MDScreen:
-
                 MDTopAppBar:
                     title: "Asistente Inteligente de Requisitos"
                     elevation: 4
@@ -21,6 +19,7 @@ MDScreen:
                     tab_bar_height: "46dp"
 
                     Tab:
+                        name: "analisis"
                         title: "Análisis"
                         MDBoxLayout:
                             orientation: "vertical"
@@ -40,8 +39,13 @@ MDScreen:
 
                                 MDRaisedButton:
                                     text: "Analizar"
-                                    md_bg_color: app.theme_cls.primary_color
                                     on_release: app.analizar_texto()
+
+                                MDRoundFlatButton:
+                                    text: "Exportar Sesión (PDF)"
+                                    on_release: app.exportar_analisis()
+                                    icon: "file-pdf-box"
+
 
                                 MDFlatButton:
                                     text: "Limpiar"
@@ -59,95 +63,120 @@ MDScreen:
                                     halign: "left"
 
                     Tab:
+                        name: "criterios"
                         title: "Criterios"
                         ScrollView:
-                            MDLabel:
-                                text:
-                                    "[b]Criterios de calidad (IEEE 830):[/b]\n\n" \
-                                    "• Corrección\n" \
-                                    "• No ambigüedad\n" \
-                                    "• Completitud\n" \
-                                    "• Consistencia\n" \
-                                    "• Clasificación\n" \
-                                    "• Verificabilidad\n" \
-                                    "• Modificabilidad\n" \
-                                    "• Trazabilidad"
-                                markup: True
+                            MDBoxLayout:
+                                orientation: "vertical"
                                 size_hint_y: None
-                                height: self.texture_size[1]
-                                text_size: self.width, None
-                                halign: "left"
-                                padding: 10, 10
+                                height: self.minimum_height
+                                padding: 20
+                                spacing: 15
+
+                                MDLabel:
+                                    text: "[b][size=22]Estándares de Calidad (IEEE 830)[/size][/b]"
+                                    markup: True
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    theme_text_color: "Primary"
+
+                                MDSeparator:
+
+                                MDLabel:
+                                    text:
+                                        "• [b]Corrección:[/b] El requisito debe reflejar una necesidad real del cliente.\n\n" \
+                                        "• [b]No Ambiguos:[/b] Cada frase debe tener una única interpretación posible.\n\n" \
+                                        "• [b]Completos:[/b] Debe incluir todas las funciones y respuestas del sistema.\n\n" \
+                                        "• [b]Consistentes:[/b] No deben existir contradicciones entre requerimientos.\n\n" \
+                                        "• [b]Clasificados:[/b] Priorizados por importancia (esencial u opcional) o estabilidad.\n\n" \
+                                        "• [b]Verificables:[/b] Debe poder probarse de forma finita y económica.\n\n" \
+                                        "• [b]Modificables:[/b] Estructura que facilite cambios rápidos y consistentes.\n\n" \
+                                        "• [b]Trazables:[/b] Se conoce su origen y su impacto en el diseño final."
+                                    markup: True
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text_size: self.width - 40, None
+                                    halign: "left"
+
+                                MDCard: # Un detalle visual para resaltar el rol del asistente
+                                    size_hint: (1, None)
+                                    height: "80dp"
+                                    padding: 15
+                                    md_bg_color: 0.9, 0.94, 1, 1
+                                    elevation: 1
+                                    MDLabel:
+                                        text: "💡 [i]El asistente valida automáticamente: No Ambigüedad, Consistencia y Corrección estructural.[/i]"
+                                        markup: True
+                                        theme_text_color: "Secondary"
 
                     Tab:
+                        name: "ayuda"
                         title: "Ayuda"
                         ScrollView:
                             MDLabel:
                                 text:
-                                    "[b]Consejos para redactar buenos requerimientos:[/b]\n\n" \
-                                    "✅ Usá lenguaje claro y directo.\n" \
-                                    "✅ Evitá términos ambiguos (rápido, fácil, eficiente).\n" \
-                                    "✅ Indicá actor, acción y condición.\n" \
-                                    "✅ Usá 'El sistema debe...' para mantener consistencia.\n" \
-                                    "✅ Evitá mezclar requisitos funcionales con los no funcionales.\n\n" \
-                                    "💡 Este asistente te ayudará a detectar errores y mejorar tu redacción."
+                                    "\n[b][size=18]1. La Fórmula Maestra[/size][/b]\n" \
+                                    "Para que el asistente no detecte errores, usá siempre:\n" \
+                                    "[color=3F51B5][b]Actor + Acción (Verbo) + Objeto + Condición[/b][/color]\n" \
+                                    "[i]Ej: 'El sistema (Actor) debe permitir (Acción) el login (Objeto) en < 2 seg (Condición).'[/i]\n\n" \
+                                    "[b][size=18]2. Reglas de Oro para Estudiantes[/size][/b]\n" \
+                                    "• [b][color=FF5722]Evitá Adjetivos Trampa:[/color][/b] No uses [i]rápido, fácil o amigable[/i]. Reemplazalos por números.\n" \
+                                    "• [b][color=FF5722]Atomicidad:[/color][/b] Cada requisito debe ser una sola función. Si usás la letra 'y', dividilo en dos.\n" \
+                                    "• [b][color=FF5722]Cuidado con Absolutos:[/color][/b] Evitá [i]'siempre'[/i] o [i]'nunca'[/i]. Definí el comportamiento esperado.\n" \
+                                    "• [b][color=FF5722]Consistencia:[/color][/b] No intercambies 'Usuario' por 'Cliente'. Mantené un solo nombre.\n\n" \
+                                    "[b][size=18]3. Checklist IEEE 830[/size][/b]\n" \
+                                    "Antes de analizar, verificá que tu requisito sea:\n" \
+                                    "1. [b]Verificable:[/b] ¿Se puede probar técnicamente?\n" \
+                                    "2. [b]Necesario:[/b] ¿Es esencial para el software?\n" \
+                                    "3. [b]Conciso:[/b] ¿Es directo y sin palabras de relleno?"
                                 markup: True
                                 size_hint_y: None
                                 height: self.texture_size[1]
-                                text_size: self.width, None
+                                text_size: self.width - 40, None
                                 halign: "left"
-                                padding: 10, 10
- # ---------- Menú lateral ----------
+
         MDNavigationDrawer:
             id: nav_drawer
-
             BoxLayout:
                 orientation: "vertical"
                 spacing: "12dp"
                 padding: "20dp"
 
-                # Encabezado institucional
                 MDBoxLayout:
                     orientation: "vertical"
                     size_hint_y: None
                     height: "120dp"
                     padding: 10
-                    md_bg_color: 0.93, 0.93, 1, 1  # color suave
+                    md_bg_color: 0.93, 0.93, 1, 1
                     MDLabel:
                         text: "Asistente IA"
                         font_style: "H6"
-                        theme_text_color: "Primary"
                     MDLabel:
                         text: "Laura Pared - ISFD Nº XX"
                         font_style: "Body2"
                         theme_text_color: "Secondary"
 
-                # Ítems del menú
                 MDList:
                     OneLineIconListItem:
                         text: "Inicio"
                         on_release: app.navegar("analisis")
                         IconLeftWidget:
                             icon: "home"
-
                     OneLineIconListItem:
                         text: "Criterios"
                         on_release: app.navegar("criterios")
                         IconLeftWidget:
                             icon: "file-document"
-
                     OneLineIconListItem:
                         text: "Ayuda"
                         on_release: app.navegar("ayuda")
                         IconLeftWidget:
                             icon: "lightbulb"
-
                     OneLineIconListItem:
                         text: "Acerca de"
                         on_release: app.mostrar_acerca_de()
                         IconLeftWidget:
                             icon: "information"
-
                     OneLineIconListItem:
                         text: "Salir"
                         on_release: app.salir()

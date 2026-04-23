@@ -1,0 +1,7 @@
+Requerimiento: el sistema debe permitir la carga de registtros en menos de 2 segundos.
+
+Resultados:
+CORRECTO
+Cumple con las heurísticas básicas.
+Sugerencia: ¡Buen trabajo!
+

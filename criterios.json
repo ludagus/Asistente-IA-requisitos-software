@@ -1,7 +1,9 @@
 {
-  "ambiguas": [
-    "rápido", "eficiente", "fácil", "intuitivo", "mejorado", "seguro", "flexible", "amigable"
-  ],
+  "ambiguas": ["rápido", "eficiente", "fácil", "intuitivo", "mejorado", "seguro", "flexible", "amigable",
+    "cosas", "todos", "todas", "siempre", "nunca",
+    "algunos", "varios", "muchos", "aproximadamente", "etcétera", "adecuado", "apropiado",
+    "optmizar", "minimizar", "maximizar", "estable", "robusto", "potente", "inmediatamente"
+],
   "incompletos": [
     "debe", "debería", "podría"
   ],
