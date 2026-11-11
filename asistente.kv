@@ -1,3 +1,6 @@
+# 1. DEFINIMOS EL COMPONENTE TAB QUE FALTA EN KIVYMD
+<Tab@MDFloatLayout+MDTabsBase>:
+
 MDScreen:
     MDNavigationLayout:
         id: nav_layout
@@ -7,7 +10,7 @@ MDScreen:
                 MDTopAppBar:
                     title: "Asistente Inteligente de Requisitos"
                     elevation: 4
-                    left_action_items: [["menu", lambda x: app.abrir_menu()]]
+                    left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
                     pos_hint: {"top": 1}
                     size_hint_y: None
                     height: "56dp"
@@ -18,167 +21,477 @@ MDScreen:
                     pos_hint: {"top": 0.9}
                     tab_bar_height: "46dp"
 
+                    # --- PESTAÑA ANALISIS ---
                     Tab:
+                        id: tab_analisis
                         name: "analisis"
                         title: "Análisis"
-                        MDBoxLayout:
-                            orientation: "vertical"
-                            padding: 10
-                            spacing: 10
 
-                            MDTextField:
-                                id: texto_input
-                                hint_text: "Escribí tu requerimiento aquí..."
-                                multiline: True
-                                size_hint_y: 0.3
-
-                            MDBoxLayout:
-                                size_hint_y: None
-                                height: "48dp"
-                                spacing: 10
-
-                                MDRaisedButton:
-                                    text: "Analizar"
-                                    on_release: app.analizar_texto()
-
-                                MDRoundFlatButton:
-                                    text: "Exportar Sesión (PDF)"
-                                    on_release: app.exportar_analisis()
-                                    icon: "file-pdf-box"
-
-
-                                MDFlatButton:
-                                    text: "Limpiar"
-                                    on_release: app.limpiar()
-
-                            ScrollView:
-                                MDLabel:
-                                    id: resultado
-                                    text: ""
-                                    markup: True
-                                    theme_text_color: "Primary"
-                                    size_hint_y: None
-                                    height: self.texture_size[1]
-                                    text_size: self.width, None
-                                    halign: "left"
-
-                    Tab:
-                        name: "criterios"
-                        title: "Criterios"
                         ScrollView:
+                            do_scroll_x: False
                             MDBoxLayout:
                                 orientation: "vertical"
-                                size_hint_y: None
-                                height: self.minimum_height
-                                padding: 20
-                                spacing: 15
+                                adaptive_height: True
+                                padding: ["16dp", "16dp", "16dp", "32dp"]
+                                spacing: "14dp"
 
                                 MDLabel:
-                                    text: "[b][size=22]Estándares de Calidad (IEEE 830)[/size][/b]"
-                                    markup: True
+                                    text: "Evaluador Heurístico de Requisitos"
+                                    font_style: "H6"
+                                    bold: True
+                                    theme_text_color: "Primary"
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    theme_text_color: "Primary"
+
+                                MDLabel:
+                                    text: "Ingrese el enunciado del requisito para verificar su conformidad con la norma ISO/IEC/IEEE 29148:"
+                                    font_style: "Body1"
+                                    theme_text_color: "Secondary"
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
 
                                 MDSeparator:
+                                    height: "1dp"
+
+                                # Tarjeta contenedora del input y botones
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "12dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    elevation: 1
+                                    radius: [10,]
+                                    md_bg_color: 0.95, 0.97, 1, 1
+
+                                    MDTextField:
+                                        id: texto_input
+                                        hint_text: "Escriba acá su requisito..."
+                                        multiline: True
+                                        max_text_length: 300
+                                        mode: "rectangle"
+                                        size_hint_y: None
+                                        height: "120dp"
+
+                                    MDBoxLayout:
+                                        size_hint_y: None
+                                        height: "48dp"
+                                        spacing: "10dp"
+
+                                        MDRaisedButton:
+                                            text: "Analizar"
+                                            icon: "magnify"
+                                            on_release: app.analizar_texto()
+
+                                        MDRoundFlatButton:
+                                            text: "Exportar PDF"
+                                            icon: "file-pdf-box"
+                                            on_release: app.exportar_analisis()
+
+                                        MDFlatButton:
+                                            text: "Limpiar"
+                                            on_release: texto_input.text = ""; resultado.text = ""
+
+                                # Tarjeta contenedora de resultados
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "8dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    elevation: 1
+                                    radius: [10,]
+                                    md_bg_color: 1, 1, 1, 1
+
+                                    MDLabel:
+                                        text: "Resultados del Análisis"
+                                        bold: True
+                                        font_style: "Subtitle1"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
+
+                                    MDSeparator:
+                                        height: "1dp"
+
+                                    MDLabel:
+                                        id: resultado
+                                        text: "[i][color=757575]Esperando ingreso de requerimiento para iniciar el análisis heurístico...[/color][/i]"
+                                        markup: True
+                                        font_style: "Body2"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
+                                        text_size: self.width - 64, None
+                                        halign: "left"
+
+                    # --- PESTAÑA CRITERIOS ---
+                    Tab:
+                        id: tab_criterios
+                        title: "Criterios"
+
+                        ScrollView:
+                            do_scroll_x: False
+                            MDBoxLayout:
+                                orientation: "vertical"
+                                adaptive_height: True
+                                padding: ["16dp", "16dp", "16dp", "32dp"]
+                                spacing: "14dp"
 
                                 MDLabel:
-                                    text:
-                                        "• [b]Corrección:[/b] El requisito debe reflejar una necesidad real del cliente.\n\n" \
-                                        "• [b]No Ambiguos:[/b] Cada frase debe tener una única interpretación posible.\n\n" \
-                                        "• [b]Completos:[/b] Debe incluir todas las funciones y respuestas del sistema.\n\n" \
-                                        "• [b]Consistentes:[/b] No deben existir contradicciones entre requerimientos.\n\n" \
-                                        "• [b]Clasificados:[/b] Priorizados por importancia (esencial u opcional) o estabilidad.\n\n" \
-                                        "• [b]Verificables:[/b] Debe poder probarse de forma finita y económica.\n\n" \
-                                        "• [b]Modificables:[/b] Estructura que facilite cambios rápidos y consistentes.\n\n" \
-                                        "• [b]Trazables:[/b] Se conoce su origen y su impacto en el diseño final."
-                                    markup: True
+                                    text: "Criterios de Calidad según ISO/IEC/IEEE 29148"
+                                    font_style: "H6"
+                                    bold: True
+                                    theme_text_color: "Primary"
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text_size: self.width - 40, None
-                                    halign: "left"
 
-                                MDCard: # Un detalle visual para resaltar el rol del asistente
-                                    size_hint: (1, None)
-                                    height: "80dp"
-                                    padding: 15
-                                    md_bg_color: 0.9, 0.94, 1, 1
+                                MDLabel:
+                                    text: "El motor heurístico evalúa la redacción de los requisitos analizando la estructura formal y los ejes normativos del estándar:"
+                                    font_style: "Body2"
+                                    theme_text_color: "Secondary"
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+
+                                MDSeparator:
+                                    height: "1dp"
+
+
+                                # Tarjeta 1: Obligación / Forma Prescriptiva
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "8dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
                                     elevation: 1
-                                    MDLabel:
-                                        text: "💡 [i]El asistente valida automáticamente: No Ambigüedad, Consistencia y Corrección estructural.[/i]"
-                                        markup: True
-                                        theme_text_color: "Secondary"
+                                    radius: [10,]
+                                    md_bg_color: 0.95, 0.97, 1, 1
 
+                                    BoxLayout:
+                                        spacing: "10dp"
+                                        size_hint_y: None
+                                        height: "24dp"
+                                        MDIcon:
+                                            icon: "check-decagram"
+                                            theme_text_color: "Custom"
+                                            text_color: 0.12, 0.47, 0.75, 1
+                                        MDLabel:
+                                            text: "Forma Prescriptiva Obligatoria ('Deberá')"
+                                            bold: True
+                                            font_style: "Subtitle2"
+
+                                    MDLabel:
+                                        text: "El requisito deberá expresar una disposición obligatoria e imperativa empleando exclusivamente el verbo 'deberá' (shall)."
+                                        font_style: "Caption"
+                                        theme_text_color: "Secondary"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
+
+                                # Tarjeta 2: Singular / Atomicidad
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "8dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    elevation: 1
+                                    radius: [10,]
+                                    md_bg_color: 0.95, 0.97, 1, 1
+
+                                    BoxLayout:
+                                        spacing: "10dp"
+                                        size_hint_y: None
+                                        height: "24dp"
+                                        MDIcon:
+                                            icon: "atom"
+                                            theme_text_color: "Custom"
+                                            text_color: 0.12, 0.47, 0.75, 1
+                                        MDLabel:
+                                            text: "Atomicidad y Singularidad"
+                                            bold: True
+                                            font_style: "Subtitle2"
+
+                                    MDLabel:
+                                        text: "Cada enunciado deberá describir una única capacidad o función del sistema, evitando conjunciones que unan acciones independientes sin descomponerlas."
+                                        font_style: "Caption"
+                                        theme_text_color: "Secondary"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
+
+                                # Tarjeta 3: Verificabilidad
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "8dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    elevation: 1
+                                    radius: [10,]
+                                    md_bg_color: 0.95, 0.97, 1, 1
+
+                                    BoxLayout:
+                                        spacing: "10dp"
+                                        size_hint_y: None
+                                        height: "24dp"
+                                        MDIcon:
+                                            icon: "file-check-outline"
+                                            theme_text_color: "Custom"
+                                            text_color: 0.12, 0.47, 0.75, 1
+                                        MDLabel:
+                                            text: "Verificabilidad"
+                                            bold: True
+                                            font_style: "Subtitle2"
+
+                                    MDLabel:
+                                        text: "El requisito deberá redactarse de manera objetiva y comprobable, permitiendo verificar su cumplimiento a través de pruebas de software específicas."
+                                        font_style: "Caption"
+                                        theme_text_color: "Secondary"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
+
+                                # Tarjeta 4: Ausencia de Ambigüedad
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "8dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    elevation: 1
+                                    radius: [10,]
+                                    md_bg_color: 0.95, 0.97, 1, 1
+
+                                    BoxLayout:
+                                        spacing: "10dp"
+                                        size_hint_y: None
+                                        height: "24dp"
+                                        MDIcon:
+                                            icon: "format-list-checks"
+                                            theme_text_color: "Custom"
+                                            text_color: 0.12, 0.47, 0.75, 1
+                                        MDLabel:
+                                            text: "Consistencia y Ausencia de Ambigüedad"
+                                            bold: True
+                                            font_style: "Subtitle2"
+
+                                    MDLabel:
+                                        text: "El enunciado debe usar siempre el mismo término para referirse a un mismo rol (actor) o elemento (entidad del sistema). Se debe evitar alternar palabras similares (como usar 'usuario' y 'cliente', o 'sistema' y 'aplicación') para no generar confusiones."
+                                        font_style: "Caption"
+                                        theme_text_color: "Secondary"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
+
+                    # --- PESTAÑA AYUDA ---
                     Tab:
+                        id: tab_ayuda
                         name: "ayuda"
                         title: "Ayuda"
-                        ScrollView:
-                            MDLabel:
-                                text:
-                                    "\n[b][size=18]1. La Fórmula Maestra[/size][/b]\n" \
-                                    "Para que el asistente no detecte errores, usá siempre:\n" \
-                                    "[color=3F51B5][b]Actor + Acción (Verbo) + Objeto + Condición[/b][/color]\n" \
-                                    "[i]Ej: 'El sistema (Actor) debe permitir (Acción) el login (Objeto) en < 2 seg (Condición).'[/i]\n\n" \
-                                    "[b][size=18]2. Reglas de Oro para Estudiantes[/size][/b]\n" \
-                                    "• [b][color=FF5722]Evitá Adjetivos Trampa:[/color][/b] No uses [i]rápido, fácil o amigable[/i]. Reemplazalos por números.\n" \
-                                    "• [b][color=FF5722]Atomicidad:[/color][/b] Cada requisito debe ser una sola función. Si usás la letra 'y', dividilo en dos.\n" \
-                                    "• [b][color=FF5722]Cuidado con Absolutos:[/color][/b] Evitá [i]'siempre'[/i] o [i]'nunca'[/i]. Definí el comportamiento esperado.\n" \
-                                    "• [b][color=FF5722]Consistencia:[/color][/b] No intercambies 'Usuario' por 'Cliente'. Mantené un solo nombre.\n\n" \
-                                    "[b][size=18]3. Checklist IEEE 830[/size][/b]\n" \
-                                    "Antes de analizar, verificá que tu requisito sea:\n" \
-                                    "1. [b]Verificable:[/b] ¿Se puede probar técnicamente?\n" \
-                                    "2. [b]Necesario:[/b] ¿Es esencial para el software?\n" \
-                                    "3. [b]Conciso:[/b] ¿Es directo y sin palabras de relleno?"
-                                markup: True
-                                size_hint_y: None
-                                height: self.texture_size[1]
-                                text_size: self.width - 40, None
-                                halign: "left"
 
+                        ScrollView:
+                            do_scroll_x: False
+                            MDBoxLayout:
+                                orientation: "vertical"
+                                adaptive_height: True
+                                padding: ["16dp", "16dp", "16dp", "32dp"]
+                                spacing: "14dp"
+
+                                MDLabel:
+                                    text: "Guía de Uso y Estructura Sintáctica"
+                                    font_style: "H6"
+                                    bold: True
+                                    theme_text_color: "Primary"
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+
+                                MDLabel:
+                                    text: "Instrucciones operativas y patrón formal requerido para la evaluación de requisitos:"
+                                    font_style: "Body1"
+                                    theme_text_color: "Secondary"
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+
+                                MDSeparator:
+                                    height: "1dp"
+
+                                # Tarjeta 1: Estructura y Fórmula Maestra
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "8dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    elevation: 1
+                                    radius: [10,]
+                                    md_bg_color: 0.90, 0.94, 1, 1
+
+                                    BoxLayout:
+                                        spacing: "10dp"
+                                        size_hint_y: None
+                                        height: "28dp"
+                                        MDIcon:
+                                            icon: "format-textbox"
+                                            theme_text_color: "Custom"
+                                            text_color: 0.12, 0.47, 0.75, 1
+                                        MDLabel:
+                                            text: "1. Fórmula Maestra del Requisito"
+                                            bold: True
+                                            font_style: "Subtitle1"
+
+                                    MDLabel:
+                                        text: "Para que el motor heurístico valide correctamente la oración, esta deberá ajustarse al siguiente patrón formal:\n[b][Condición (opcional)] + [Actor / Sujeto] + [«deberá»] + [Acción / Servicio] + [Objeto][/b]\nEjemplo: 'El sistema deberá validar las credenciales de acceso.'"
+                                        markup: True
+                                        font_style: "Body2"
+                                        theme_text_color: "Secondary"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
+
+                                # Tarjeta 2: Modo de Uso del Asistente
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "8dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    elevation: 1
+                                    radius: [10,]
+                                    md_bg_color: 0.95, 0.97, 1, 1
+
+                                    BoxLayout:
+                                        spacing: "10dp"
+                                        size_hint_y: None
+                                        height: "28dp"
+                                        MDIcon:
+                                            icon: "gesture-tap"
+                                            theme_text_color: "Custom"
+                                            text_color: 0.12, 0.47, 0.75, 1
+                                        MDLabel:
+                                            text: "2. Pasos para la Evaluación"
+                                            bold: True
+                                            font_style: "Subtitle1"
+
+                                    MDLabel:
+                                        text: "1. Ingrese o pegue el enunciado del requisito en el campo de texto de la pestaña 'Análisis'.\n2. Presione el botón de evaluación para disparar el motor heurístico.\n3. Revise las alertas de sintaxis y aplique las recomendaciones necesarias."
+                                        markup: True
+                                        font_style: "Body2"
+                                        theme_text_color: "Secondary"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
+
+                                # Tarjeta 3: Checklist Previo
+                                MDCard:
+                                    orientation: "vertical"
+                                    padding: "16dp"
+                                    spacing: "8dp"
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    elevation: 1
+                                    radius: [10,]
+                                    md_bg_color: 0.95, 0.97, 1, 1
+
+                                    BoxLayout:
+                                        spacing: "10dp"
+                                        size_hint_y: None
+                                        height: "28dp"
+                                        MDIcon:
+                                            icon: "checkbox-marked-outline"
+                                            theme_text_color: "Custom"
+                                            text_color: 0.12, 0.47, 0.75, 1
+                                        MDLabel:
+                                            text: "3. Checklist de Verificación"
+                                            bold: True
+                                            font_style: "Subtitle1"
+
+                                    MDLabel:
+                                        text: "Antes de someter el requisito a análisis, verifique que:\n• Exprese una necesidad indispensable para el sistema.\n• Su cumplimiento pueda comprobarse objetivamente.\n• Emplee estrictamente la forma prescriptiva «deberá»."
+                                        markup: True
+                                        font_style: "Body2"
+                                        theme_text_color: "Secondary"
+                                        size_hint_y: None
+                                        height: self.texture_size[1]
         MDNavigationDrawer:
             id: nav_drawer
+            radius: (0, 16, 16, 0)
             BoxLayout:
                 orientation: "vertical"
-                spacing: "12dp"
-                padding: "20dp"
+                spacing: "4dp"
+                padding: "12dp"
 
+                # Encabezado del Menú Lateral
                 MDBoxLayout:
                     orientation: "vertical"
                     size_hint_y: None
-                    height: "120dp"
-                    padding: 10
-                    md_bg_color: 0.93, 0.93, 1, 1
+                    height: "170dp"
+                    padding: 12
+                    spacing: 4
+                    md_bg_color: 0.90, 0.94, 1, 1
+                    radius: [12,]
+
+# Contenedor para la imagen del logo (puedes poner tu archivo de imagen aquí)
+                    AnchorLayout:
+                        anchor_x: "center"
+                        anchor_y: "center"
+                        size_hint_y: None
+                        height: "65dp"
+
+                        Image:
+                            source: "Logo-UNNE.png" # Reemplaza con el nombre de tu archivo de imagen (ej: logo.png)
+                            size_hint: None, None
+                            size: "150dp", "100dp"
+                            allow_stretch: True
+                            keep_ratio: True
+
                     MDLabel:
-                        text: "Asistente IA"
-                        font_style: "H6"
+                        text: "Asistente de Requisitos"
+                        font_style: "Subtitle1"
+                        bold: True
+                        halign: "center"
+                        theme_text_color: "Primary"
+
                     MDLabel:
-                        text: "Laura Pared - ISFD Nº XX"
-                        font_style: "Body2"
+                        text: "Laura Rosana Pared"
+                        font_style: "Caption"
+                        halign: "center"
                         theme_text_color: "Secondary"
 
-                MDList:
-                    OneLineIconListItem:
-                        text: "Inicio"
-                        on_release: app.navegar("analisis")
-                        IconLeftWidget:
-                            icon: "home"
-                    OneLineIconListItem:
-                        text: "Criterios"
-                        on_release: app.navegar("criterios")
-                        IconLeftWidget:
-                            icon: "file-document"
-                    OneLineIconListItem:
-                        text: "Ayuda"
-                        on_release: app.navegar("ayuda")
-                        IconLeftWidget:
-                            icon: "lightbulb"
-                    OneLineIconListItem:
-                        text: "Acerca de"
-                        on_release: app.mostrar_acerca_de()
-                        IconLeftWidget:
-                            icon: "information"
-                    OneLineIconListItem:
-                        text: "Salir"
-                        on_release: app.salir()
-                        IconLeftWidget:
-                            icon: "exit-to-app"
+                    MDLabel:
+                        text: "Especialización en TI - UNNE (2026)"
+                        font_style: "Overline"
+                        halign: "center"
+                        theme_text_color: "Hint"
+
+                MDSeparator:
+                    height: "1dp"
+
+                # Opciones de Navegación (Con llamadas limpias a los métodos del App)
+                ScrollView:
+                    MDList:
+                        OneLineIconListItem:
+                            text: "Inicio / Análisis"
+                            on_release: app.navegar("analisis")
+                            IconLeftWidget:
+                                icon: "home-outline"
+
+                        OneLineIconListItem:
+                            text: "Criterios ISO 29148"
+                            on_release: app.navegar("criterios")
+                            IconLeftWidget:
+                                icon: "book-open-outline"
+
+                        OneLineIconListItem:
+                            text: "Ayuda y Guía"
+                            on_release: app.navegar("ayuda")
+                            IconLeftWidget:
+                                icon: "help-circle-outline"
+
+                        MDSeparator:
+                            height: "1dp"
+
+                        OneLineIconListItem:
+                            text: "Acerca de"
+                            on_release: app.mostrar_acerca_de()
+                            IconLeftWidget:
+                                icon: "information-outline"
+
+                        OneLineIconListItem:
+                            text: "Salir"
+                            on_release: app.salir()
+                            IconLeftWidget:
+                                icon: "logout"
