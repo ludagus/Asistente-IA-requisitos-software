@@ -137,7 +137,7 @@ def aplicar_reglas_nlp(texto):
     return resultados
 
 
-# APLICACIÓN PRINCIPAL KIVYMD
+
 class AsistenteApp(MDApp):
     
     def __init__(self, **kwargs):
@@ -203,7 +203,7 @@ class AsistenteApp(MDApp):
         else:
             return
         
-        # Recorremos las pestañas por su texto de etiqueta y cambiamos
+       
         for item in tabs_widget.get_tab_list():
             if item.text == titulo:
                 tabs_widget.switch_tab(item)
