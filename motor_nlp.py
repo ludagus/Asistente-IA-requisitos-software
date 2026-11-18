@@ -1,7 +1,4 @@
-"""
-Motor de análisis de requisitos basado en PLN (spaCy) + reglas heurísticas.
-
-"""
+import difflib
 import re
 import unicodedata
 
@@ -24,8 +21,6 @@ def precargar_modelo():
                 f"Instalalo con:  python -m spacy download {MODELO}"
             ) from e
     return _NLP
-
-
 
 def _norm(s):
     """Minúsculas y sin tildes, para comparar sin depender de la ortografía del estudiante."""
@@ -54,12 +49,11 @@ def _obs(categoria, tipo, explicacion, sugerencia, ejemplo=None):
 CAT_ESTRUCTURA = "ESTRUCTURA"
 CAT_CALIDAD = "CARACTERÍSTICAS DE CALIDAD"
 CAT_LINGUISTICOS = "CRITERIOS LINGÜÍSTICOS"
-_ORDEN_CAT = {CAT_ESTRUCTURA: 0, CAT_CALIDAD: 1, CAT_LINGUISTICOS: 2}
+CAT_TRAZ = "TRAZABILIDAD"
+CAT_CONJUNTO = "CONSISTENCIA ENTRE REQUISITOS"
+_ORDEN_CAT = {CAT_ESTRUCTURA: 0, CAT_CALIDAD: 1, CAT_LINGUISTICOS: 2, CAT_TRAZ: 3, CAT_CONJUNTO: 4}
 
 
-# ---------------------------------------------------------------------------
-# Léxicos 
-# ---------------------------------------------------------------------------
 ACTORES = {"sistema", "aplicacion", "software", "usuario", "cliente",
            "administrador", "plataforma"}
 
@@ -94,11 +88,12 @@ GRUPOS_SINONIMOS = [
     ({"usuario", "cliente"}, "el rol de la persona que usa el sistema"),
     ({"sistema", "aplicacion", "software", "plataforma"}, "el software"),
 ]
+COPULATIVOS = {"ser", "estar"}
 DEPS_COMPLEMENTO = {"obj", "iobj", "obl", "obl:arg", "xcomp", "ccomp", "advcl"}
 
 
 # ---------------------------------------------------------------------------
-# Clasificación de modales usando lema + morfología (con respaldo por forma)
+# Clasificación de modales usando lema + morfología
 # ---------------------------------------------------------------------------
 def _clasificar_modal(t):
     """Devuelve 'fuerte', 'debil' o None."""
@@ -117,7 +112,8 @@ def _clasificar_modal(t):
 # ---------------------------------------------------------------------------
 # Motor principal
 # ---------------------------------------------------------------------------
-def aplicar_reglas_nlp(texto):
+def _analizar_enunciado(texto):
+    """Reglas sobre el enunciado ya sin el identificador."""
     nlp = precargar_modelo()
     doc = nlp(texto)
     texto_norm = _norm(texto)
@@ -174,9 +170,11 @@ def aplicar_reglas_nlp(texto):
             "Incluir 'deberá' seguido de un verbo en infinitivo.",
             "Mal: «El sistema guarda los datos del cliente» -> Mejor: «El sistema deberá guardar los datos del cliente»."))
 
+   
     acciones = [t for t in doc
-                if t.pos_ == "VERB" and "Inf" in t.morph.get("VerbForm")
+                if t.pos_ in ("VERB", "AUX") and "Inf" in t.morph.get("VerbForm")
                 and _lema(t) not in ("deber", "poder")]
+    hay_copulativo = any(_lema(v) in COPULATIVOS for v in acciones)
 
     if hay_fuerte and not acciones:
         res.append(_obs(
@@ -185,7 +183,8 @@ def aplicar_reglas_nlp(texto):
             "Completar con el verbo que expresa la capacidad requerida.",
             "Mal: «El sistema deberá la lista de productos» -> "
             "Mejor: «El sistema deberá mostrar la lista de productos»."))
-    elif acciones and all(not ({c.dep_ for c in v.children} & DEPS_COMPLEMENTO) for v in acciones):
+    elif (acciones and not hay_copulativo
+          and all(not ({c.dep_ for c in v.children} & DEPS_COMPLEMENTO) for v in acciones)):
         res.append(_obs(
             CAT_CALIDAD, "Característica 'Completo' (Posible falta de objeto o condición)",
             f"El verbo [b]{acciones[0].text}[/b] no tiene objeto ni complemento asociado: "
@@ -321,6 +320,135 @@ def aplicar_reglas_nlp(texto):
     res.sort(key=lambda o: _ORDEN_CAT[o["categoria"]])  # estable: agrupa por categoría
     return res
 
+
+# ---------------------------------------------------------------------------
+# Trazabilidad: identificador
+# ---------------------------------------------------------------------------
+RE_ID = re.compile(
+    r"^\s*[\[\(]?\s*(RNF|RF|REQ)\s*[#\-_:.]?\s*0*(\d+)\s*[\]\)]?\s*[:\-.]?\s*", re.I)
+
+
+def extraer_metadatos(texto):
+    """Separa el identificador (RF#1, RF-01, RNF 2...) del enunciado.
+    Devuelve (texto_limpio, id_normalizado | None)."""
+    id_req = None
+    m = RE_ID.match(texto)
+    if m:
+        id_req = f"{m.group(1).upper()}-{int(m.group(2)):02d}"
+        texto = texto[m.end():]
+    texto = re.sub(r"\s+", " ", texto).strip(" ,;-")
+    return texto, id_req
+
+
+def analizar_requisito(texto):
+    """Analiza un requisito completo. Devuelve:
+    {"id", "texto" (limpio), "observaciones"}"""
+    limpio, id_req = extraer_metadatos(texto)
+    obs = _analizar_enunciado(limpio)
+
+    if not id_req:
+        obs.append(_obs(
+            CAT_TRAZ, "Característica 'Trazable' (Sin identificador)",
+            "El requisito no tiene un identificador único, por lo que no se lo puede "
+            "referenciar ni rastrear en el resto del documento.",
+            "Anteponer un identificador con numeración correlativa y sin repetir: "
+            "RF-01, RF-02… (funcionales) o RNF-01… (no funcionales).",
+            "Mal: «El sistema deberá validar las credenciales» -> "
+            "Mejor: «RF-01: El sistema deberá validar las credenciales»."))
+
+    obs.sort(key=lambda o: _ORDEN_CAT[o["categoria"]])
+    return {"id": id_req, "texto": limpio, "observaciones": obs}
+
+
+def aplicar_reglas_nlp(texto):
+    """Compatibilidad: devuelve solo la lista de observaciones."""
+    return analizar_requisito(texto)["observaciones"]
+
+
+# ---------------------------------------------------------------------------
+# Conjunto de requisitos del proyecto (consistencia entre requisitos)
+# ---------------------------------------------------------------------------
+UMBRAL_DUPLICADO = 0.85      # textos casi idénticos => duplicado
+UMBRAL_CONTRADICCION = 0.75  # casi idénticos pero uno niega => posible contradicción
+
+
+def _etiqueta(r, i):
+    return r["id"] or f"#{i + 1}"
+
+
+def analizar_conjunto(requisitos):
+    """Verifica consistencia entre los requisitos del proyecto.
+    Recibe una lista de dicts con las claves: id, texto."""
+    obs = []
+    sesion = requisitos
+    n = len(sesion)
+    if n < 2:
+        return obs
+    nlp = precargar_modelo()
+    etq = [_etiqueta(r, i) for i, r in enumerate(sesion)]
+
+    # 1. Identificadores repetidos
+    por_id = {}
+    for i, r in enumerate(sesion):
+        if r["id"]:
+            por_id.setdefault(r["id"], []).append(i)
+    repetidos = {k: v for k, v in por_id.items() if len(v) > 1}
+    if repetidos:
+        detalle = "; ".join(
+            f"[b]{k}[/b] se usa en los requisitos n.º {', '.join(str(i + 1) for i in v)}"
+            for k, v in repetidos.items())
+        obs.append(_obs(
+            CAT_CONJUNTO, "Característica 'Trazable' (Identificador repetido)",
+            f"Hay identificadores repetidos: {detalle}.",
+            "Cada requisito debe tener un identificador único. Renumerar los repetidos.",
+            "Mal: RF-01 «…validar credenciales» y RF-01 «…enviar la factura» -> "
+            "Mejor: RF-01 y RF-02."))
+
+    # 2. Duplicados y posibles contradicciones
+    norm = [_norm(r["texto"]) for r in sesion]
+    neg = [bool(re.search(r"\b(no|nunca|jamas)\b", t)) for t in norm]
+    duplicados, contradicciones = [], []
+    for i in range(n):
+        for j in range(i + 1, n):
+            ratio = difflib.SequenceMatcher(None, norm[i], norm[j]).ratio()
+            if ratio >= UMBRAL_DUPLICADO and neg[i] == neg[j]:
+                duplicados.append((i, j, ratio))
+            elif ratio >= UMBRAL_CONTRADICCION and neg[i] != neg[j]:
+                contradicciones.append((i, j))
+    if duplicados:
+        detalle = "; ".join(f"[b]{etq[i]}[/b] y [b]{etq[j]}[/b] ({ratio:.0%} de similitud)"
+                            for i, j, ratio in duplicados)
+        obs.append(_obs(
+            CAT_CONJUNTO, "Característica 'Consistente' (Requisito duplicado o redundante)",
+            f"Estos requisitos expresan prácticamente lo mismo: {detalle}.",
+            "Conservar uno solo. Si es una reformulación del mismo requisito, analizarlo con "
+            "el mismo identificador para que quede una única versión.",
+            "Mal: RF-01 «…registrar el pedido» y RF-04 «…registrar un pedido» -> Mejor: dejar solo RF-01."))
+    if contradicciones:
+        detalle = "; ".join(f"[b]{etq[i]}[/b] y [b]{etq[j]}[/b]" for i, j in contradicciones)
+        obs.append(_obs(
+            CAT_CONJUNTO, "Característica 'Consistente' (Posible contradicción)",
+            f"Estos requisitos son casi iguales pero uno de ellos está negado: {detalle}.",
+            "Revisar si se contradicen y dejar un único criterio.",
+            "Mal: «El sistema deberá permitir el acceso invitado» y «El sistema no deberá "
+            "permitir el acceso invitado»."))
+
+    # 3. Terminología alternada entre requisitos (por lemas)
+    lemas = [{_lema(t) for t in doc} for doc in nlp.pipe([r["texto"] for r in sesion])]
+    for grupo, descripcion in GRUPOS_SINONIMOS:
+        usos = {term: [etq[i] for i in range(n) if term in lemas[i]] for term in sorted(grupo)}
+        usos = {k: v for k, v in usos.items() if v}
+        if len(usos) > 1:
+            detalle = "; ".join(f"[b]{k}[/b] en {', '.join(v)}" for k, v in usos.items())
+            obs.append(_obs(
+                CAT_CONJUNTO, "Característica 'Consistente' (Terminología alternada entre requisitos)",
+                f"Se usan distintos términos para {descripcion}: {detalle}.",
+                "Si se refieren a lo mismo, elegir un único término para todo el documento. "
+                "Si son roles distintos, definirlos por separado.",
+                "Mal: RF-01 «…el usuario…» y RF-02 «…el cliente…» -> Mejor: usar «usuario» en ambos."))
+
+    obs.sort(key=lambda o: _ORDEN_CAT[o["categoria"]])
+    return obs
 
 
 if __name__ == "__main__":
